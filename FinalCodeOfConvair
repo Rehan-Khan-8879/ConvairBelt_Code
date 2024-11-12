@@ -1,0 +1,129 @@
+#include<Stepper.h>
+#include<Servo.h>
+
+// variable for milisecons function
+unsigned long pretime = 0;
+unsigned long currentTime;
+int interval = 200;
+
+//variable for open adn closed state of servo
+int open = 40;
+int close =0;
+//defining all the servo
+Servo whiteServo;
+Servo blueServo;
+Servo redServo;
+
+//varable for storing color
+String block;
+
+//variable for stepper motor 
+const int stepsPerRevolution = 100;
+Stepper myStepper(stepsPerRevolution, 6, 7, 8, 9);
+int stepCount = 0;
+
+
+//defining the color sensor pin
+const int S2 = 11;
+const int S3 = 12;
+const int outPin = 13;
+
+void setup() {
+  myStepper.setSpeed(100);
+  //attaching the all the servo too the pins of arduino
+  whiteServo.attach(2);
+  blueServo.attach(3);
+  redServo.attach(4);
+  //write all to default
+  whiteServo.write(0);
+  blueServo.write(0);
+  redServo.write(0);
+  
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(outPin, INPUT);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  myStepper.step(-2);
+  delay(20);
+  currentTime = millis();
+
+  if(currentTime-pretime >=1000){
+
+    int red = readColor('R');
+    int green = readColor('G');
+    int blue = readColor('B');
+   delay(50);
+    //                               condition fo identifying color
+    //check for red 
+    if(red<green){
+      if(red<blue){
+        block = "red";
+      }
+    }
+    //check for green
+    if(green<red){
+      if(green < blue){
+        block = "green";
+      }
+    }
+    //check for blue
+    if(blue<red){
+      if(blue<green){
+        block = "blue";
+      }
+    }
+    //check for white
+    if(red<70 && green<70 && blue<70){
+      block = "white";
+    }
+    if(red >170 && blue > 170 && green>170){
+      block = "black";
+    }
+    Serial.println(block);
+
+    ///                                         condition for setting servoss
+    if(block == "red"){
+      redServo.write(open);
+      whiteServo.write(close);
+      blueServo.write(close);
+    }
+    if(block == "blue"){
+      redServo.write(close);
+      whiteServo.write(close);
+      blueServo.write(open);
+    }
+    if(block == "white"){
+      redServo.write(close);
+      whiteServo.write(open);
+      blueServo.write(close);
+    }
+    pretime = millis();
+  }
+}
+
+
+
+// Function to read color based on type
+int readColor(char color) {
+  switch (color) {
+    case 'R':
+      digitalWrite(S2, LOW);
+      digitalWrite(S3, LOW);
+      break;
+    case 'G':
+      digitalWrite(S2, HIGH);
+      digitalWrite(S3, HIGH);
+      break;
+    case 'B':
+      digitalWrite(S2, LOW);
+      digitalWrite(S3, HIGH);
+      break;
+    default:
+      return 0;
+  }
+  return pulseIn(outPin, LOW);
+}
